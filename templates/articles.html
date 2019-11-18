@@ -183,6 +183,29 @@
             </nav>
         </div>
 
+        <h2>Message</h2>
+        <div class="table-responsive">
+            <table class="table table-striped table-sm">
+                <thead>
+                <tr>
+                    <th>Full Name</th>
+                    <th>Email</th>
+                    <th>Message</th>
+                </tr>
+                </thead>
+                <tbody>
+                {{ $msgList := .msgs }}
+                {{ range $msgList.Messages }}
+                    <tr>
+                        <td>{{.FullName}}</td>
+                        <td>{{.Email}}</td>
+                        <td>{{.Message}}</td>
+                    </tr>
+                {{ end }}
+                </tbody>
+            </table>
+        </div>
+
         <h2>Post</h2>
         <a class="btn btn-sm btn-outline-secondary" href="/articles/add">Add New Post</a>
         <div class="table-responsive">

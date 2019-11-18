@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-const BackendUrl = "localhost:8080"
+const BackendUrl = "http://localhost:8080"
 
 type Post struct {
 	Id            int    `json:"id"`
@@ -189,6 +189,21 @@ func articles(c *gin.Context) {
 		_ = c.AbortWithError(http.StatusNotFound, err)
 		return
 	}
+
+	var msgs Messages
+	resp2, err := http.Post(BackendUrl+"/contact", "application/json", bytes.NewBuffer(sessionJson))
+	if err != nil {
+		_ = c.AbortWithError(http.StatusNotFound, err)
+		return
+	}
+	defer resp2.Body.Close()
+	err = json.NewDecoder(resp2.Body).Decode(&msgs)
+	if err != nil {
+		_ = c.AbortWithError(http.StatusNotFound, err)
+		return
+	}
+
+	data["msgs"] = msgs
 	data["posts"] = posts
 	data["user"] = "yoga"
 	c.HTML(http.StatusOK, "articles.html", data)
