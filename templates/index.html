@@ -163,7 +163,11 @@
                 <a class="blog-header-logo text-dark" href="#">Yoga's Blog</a>
             </div>
             <div class="col-4 d-flex justify-content-end align-items-center">
-                <a class="btn btn-sm btn-outline-secondary" href="/login">Login</a>
+                {{ if .user }}
+                    <a class="btn btn-sm btn-outline-secondary" href="/logout">Logout</a>
+                {{ else }}
+                    <a class="btn btn-sm btn-outline-secondary" href="/login">Login</a>
+                {{ end }}
             </div>
         </div>
     </header>
@@ -173,19 +177,24 @@
             <a class="p-2 text-muted" href="/">Home</a>
             <a class="p-2 text-muted" href="/about">About</a>
             <a class="p-2 text-muted" href="/contact">Contact Us</a>
-            <a class="p-2 text-muted" href="/articles">Articles</a>
+            {{ if .user }}
+                <a class="p-2 text-muted" href="/articles">Articles</a>
+            {{ end }}
         </nav>
     </div>
 
     <main role="main" class="container">
         <div class="row">
             <div class="col-md-8 blog-main">
-                <div class="blog-post">
-                    <h2 class="blog-post-title">Sample blog post</h2>
-                    <p class="blog-post-meta">January 1, 2014 by Yoga</p>
-                    <p>This blog post shows a few different types of content that’s supported and styled with Bootstrap.
-                        Basic typography, images, and code are all supported.</p>
-                </div><!-- /.blog-post -->
+                {{ $postList := .posts }}
+                {{ range $postList.Posts }}
+                    <div class="blog-post">
+                        <h2 class="blog-post-title">{{.Title}}</h2>
+                        <p class="blog-post-meta">{{.TimePublished}} by {{.Author}}</p>
+                        <p>{{.Content}}</p>
+                    </div><!-- /.blog-post -->
+                {{end}}
+
             </div><!-- /.blog-main -->
         </div>
     </main>

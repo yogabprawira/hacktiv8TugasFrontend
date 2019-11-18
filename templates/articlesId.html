@@ -8,9 +8,9 @@
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
 
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <meta name="description" content="">
 
-    <title>Contact Us</title>
+    {{ $postSt := .post }}
+    <title>{{$postSt.Title}}</title>
 
     <style>
         .bd-placeholder-img {
@@ -27,6 +27,8 @@
                 font-size: 3.5rem;
             }
         }
+
+        .lh-condensed { line-height: 1.25; }
 
         .blog-header {
             line-height: 1;
@@ -155,92 +157,84 @@
 
 </head>
 <body>
-    <div class="container">
-        <header class="blog-header py-3">
-            <div class="row flex-nowrap justify-content-between align-items-center">
-                <div class="col-4 text-left">
-                    <a class="blog-header-logo text-dark" href="#">Yoga's Blog</a>
-                </div>
-                <div class="col-4 d-flex justify-content-end align-items-center">
-                    {{ if .user }}
-                        <a class="btn btn-sm btn-outline-secondary" href="/logout">Logout</a>
-                    {{ else }}
-                        <a class="btn btn-sm btn-outline-secondary" href="/login">Login</a>
-                    {{ end }}
-                </div>
+<div class="container">
+    <header class="blog-header py-3">
+        <div class="row flex-nowrap justify-content-between align-items-center">
+            <div class="col-4 text-left">
+                <a class="blog-header-logo text-dark" href="#">Yoga's Blog</a>
             </div>
-        </header>
-
-        <div class="nav-scroller py-1 mb-2">
-            <nav class="nav d-flex left-content-between">
-                <a class="p-2 text-muted" href="/">Home</a>
-                <a class="p-2 text-muted" href="/about">About</a>
-                <a class="p-2 text-muted" href="/contact">Contact Us</a>
+            <div class="col-4 d-flex justify-content-end align-items-center">
                 {{ if .user }}
-                    <a class="p-2 text-muted" href="/articles">Articles</a>
+                    <a class="btn btn-sm btn-outline-secondary" href="/logout">Logout</a>
+                {{ else }}
+                    <a class="btn btn-sm btn-outline-secondary" href="/login">Login</a>
                 {{ end }}
-            </nav>
-        </div>
-
-        <div class="row">
-            <div class="col-md-8 order-md-1">
-                <h4 class="mb-3">Contact Us</h4>
-                <form class="needs-validation" novalidate>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="fullName">Full Name</label>
-                            <input type="text" class="form-control" id="fullName" placeholder="Your Name" value="" name="fullName" required>
-                            <div class="invalid-feedback">
-                                Valid full name is required.
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="email">Email</label>
-                        <input type="email" class="form-control" id="email" name="email" placeholder="you@example.com" required>
-                        <div class="invalid-feedback">
-                            Please enter a valid email address.
-                        </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="message">Message</label>
-                        <textarea class="form-control" id="message" name="message" placeholder="Your message" rows="5" required></textarea>
-                        <div class="invalid-feedback">
-                            Please enter your message.
-                        </div>
-                    </div>
-
-                    <hr class="mb-4">
-                    <button class="btn btn-primary btn-lg btn-block" type="submit">Send Message</button>
-                </form>
             </div>
         </div>
+    </header>
 
+    <div class="nav-scroller py-1 mb-2">
+        <nav class="nav d-flex left-content-between">
+            <a class="p-2 text-muted" href="/">Home</a>
+            <a class="p-2 text-muted" href="/about">About</a>
+            <a class="p-2 text-muted" href="/contact">Contact Us</a>
+            {{ if .user }}
+                <a class="p-2 text-muted" href="/articles">Articles</a>
+            {{ end }}
+        </nav>
     </div>
 
-    <script>
-        // Example starter JavaScript for disabling form submissions if there are invalid fields
-        (function () {
-            'use strict';
+    <div class="row">
+        <div class="col-md-8 order-md-1">
+            <form class="needs-validation" novalidate>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="postTitle">Post Title</label>
+                        <input type="text" class="form-control" id="postTitle" placeholder="" value="{{$postSt.Title}}" name="postTitle" required>
+                        <div class="invalid-feedback">
+                            Post title is required.
+                        </div>
+                    </div>
+                </div>
 
-            window.addEventListener('load', function () {
-                // Fetch all the forms we want to apply custom Bootstrap validation styles to
-                var forms = document.getElementsByClassName('needs-validation');
+                <div class="mb-3">
+                    <label for="postContent">Post Content</label>
+                    <textarea class="form-control" id="postContent" name="postContent" placeholder="" rows="5" required>{{$postSt.Content}}</textarea>
+                    <div class="invalid-feedback">
+                        Post content is required.
+                    </div>
+                </div>
 
-                // Loop over them and prevent submission
-                Array.prototype.filter.call(forms, function (form) {
-                    form.addEventListener('submit', function (event) {
-                        if (form.checkValidity() === false) {
-                            event.preventDefault();
-                            event.stopPropagation();
-                        }
-                        form.classList.add('was-validated')
-                    }, false)
-                })
-            }, false)
-        }())
-    </script>
+                <hr class="mb-4">
+                <button class="btn btn-primary btn-lg btn-block" type="submit">Publish</button>
+            </form>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // Example starter JavaScript for disabling form submissions if there are invalid fields
+    (function () {
+        'use strict';
+
+        window.addEventListener('load', function () {
+            // Fetch all the forms we want to apply custom Bootstrap validation styles to
+            var forms = document.getElementsByClassName('needs-validation');
+
+            // Loop over them and prevent submission
+            Array.prototype.filter.call(forms, function (form) {
+                form.addEventListener('submit', function (event) {
+                    if (form.checkValidity() === false) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                    }
+                    form.classList.add('was-validated')
+                }, false)
+            })
+        }, false)
+    }())
+</script>
+
 </body>
 </html>
