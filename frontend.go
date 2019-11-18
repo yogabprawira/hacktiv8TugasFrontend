@@ -236,9 +236,10 @@ func articlesId(c *gin.Context) {
 		_ = c.AbortWithError(http.StatusNotFound, err)
 		return
 	}
+	log.Println(post)
 	data["post"] = post
 	data["user"] = "yoga"
-	data["action"] = "/articles/id/" + postId.Id
+	data["action"] = "/articles/add/" + postId.Id
 	c.HTML(http.StatusOK, "articlesId.html", data)
 }
 
@@ -274,7 +275,7 @@ func articlesIdPost(c *gin.Context) {
 		_ = c.AbortWithError(http.StatusNotFound, err)
 		return
 	}
-	resp, err := http.Post(BackendUrl+"/articles/id/"+postId.Id, "application/json", bytes.NewBuffer(submitPostJson))
+	resp, err := http.Post(BackendUrl+"/articles/add/"+postId.Id, "application/json", bytes.NewBuffer(submitPostJson))
 	if err != nil {
 		_ = c.AbortWithError(http.StatusNotFound, err)
 		return
