@@ -61,7 +61,7 @@
         .form-signin .form-control:focus {
             z-index: 2;
         }
-        .form-signin input[type="email"] {
+        .form-signin input[type="text"] {
             margin-bottom: -1px;
             border-bottom-right-radius: 0;
             border-bottom-left-radius: 0;
@@ -76,8 +76,8 @@
 <body class="text-center">
     <form class="form-signin" action="/login" method="post">
         <h1 class="h3 mb-3 font-weight-normal">Please Login</h1>
-        <label for="inputEmail" class="sr-only">Email address</label>
-        <input type="email" id="inputEmail" class="form-control" placeholder="Email address" name="inputEmail" required autofocus>
+        <label for="inputUsername" class="sr-only">Username</label>
+        <input type="text" id="inputUsername" class="form-control" placeholder="Username" name="inputUsername" required autofocus>
         <label for="inputPassword" class="sr-only">Password</label>
         <input type="password" id="inputPassword" class="form-control" placeholder="Password" name="inputPassword" required>
         <button class="btn btn-lg btn-primary btn-block" type="submit">Login</button>

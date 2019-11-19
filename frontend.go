@@ -2,16 +2,27 @@ package main
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
+	"github.com/gorilla/securecookie"
 	"log"
 	"net/http"
 	"strconv"
 	"time"
 )
 
+// username : yoga
+// password : yoga123
+
 const BackendUrl = "http://localhost:8080"
+const PwdSalt = "rIc[@(}sgO>LNyAzaJ?k.RUhYOKZtQ#rlB+$r-e%rr*L-CF+33JTrg@}50E`X/50"
+const SessionName = "auth-session"
 
 type Post struct {
 	Id            int    `json:"id"`
@@ -46,13 +57,20 @@ type Session struct {
 }
 
 type RespLogin struct {
-	Session string     `json:"session"`
-	Resp    RespStatus `json:"resp"`
+	Session  Session    `json:"session"`
+	Username string     `json:"username"`
+	Name     string     `json:"name"`
+	Resp     RespStatus `json:"resp"`
 }
 
 type Login struct {
-	Email    string `json:"email" form:"inputEmail"`
+	Username string `json:"username" form:"inputUsername"`
 	Password string `json:"password" form:"inputPassword"`
+}
+
+type ReqLogin struct {
+	Session Session `json:"session"`
+	Login   Login   `json:"login"`
 }
 
 type PostId struct {
@@ -62,6 +80,25 @@ type PostId struct {
 type SubmitPost struct {
 	Session Session `json:"session"`
 	Post    Post    `json:"post"`
+}
+
+func hashPwd(username string, pwd string, salt string) string {
+	s, _ := base64.StdEncoding.DecodeString(salt)
+	pwdAdd := append([]byte(username+pwd), s...)
+	h := sha256.New()
+	h.Write(pwdAdd)
+	result := h.Sum(nil)
+	return base64.StdEncoding.EncodeToString(result)
+}
+
+func createSession(username string, pwd string, salt string) string {
+	s, _ := base64.StdEncoding.DecodeString(salt)
+	pwdAdd := append([]byte(username+pwd), s...)
+	pwdAdd = append(pwdAdd, []byte(time.Now().Format(time.RFC3339Nano))...)
+	h := sha256.New()
+	h.Write(pwdAdd)
+	result := h.Sum(nil)
+	return base64.StdEncoding.EncodeToString(result)
 }
 
 func home(c *gin.Context) {
@@ -81,20 +118,39 @@ func home(c *gin.Context) {
 		return
 	}
 
+	session := sessions.Default(c)
+	user := ""
+	val := session.Get("username")
+	if val != nil {
+		user = val.(string)
+	}
+
 	data["posts"] = posts
-	data["user"] = "yoga"
+	data["user"] = user
 	c.HTML(http.StatusOK, "index.html", data)
 }
 
 func about(c *gin.Context) {
 	data := map[string]interface{}{}
-	data["user"] = "yoga"
+	session := sessions.Default(c)
+	user := ""
+	val := session.Get("username")
+	if val != nil {
+		user = val.(string)
+	}
+	data["user"] = user
 	c.HTML(http.StatusOK, "about.html", data)
 }
 
 func contactUs(c *gin.Context) {
 	data := map[string]interface{}{}
-	data["user"] = "yoga"
+	session := sessions.Default(c)
+	user := ""
+	val := session.Get("username")
+	if val != nil {
+		user = val.(string)
+	}
+	data["user"] = user
 	c.HTML(http.StatusOK, "contact.html", data)
 }
 
@@ -133,17 +189,32 @@ func messagePost(c *gin.Context) {
 }
 
 func login(c *gin.Context) {
+	session := sessions.Default(c)
+	user := ""
+	val := session.Get("username")
+	if val != nil {
+		user = val.(string)
+	}
+	if len(user) > 0 {
+		c.Redirect(http.StatusMovedPermanently, "/")
+	}
 	c.HTML(http.StatusOK, "login.html", nil)
 }
 
 func loginPost(c *gin.Context) {
 	var login Login
+	var reqLogin ReqLogin
 	err := c.ShouldBind(&login)
 	if err != nil {
 		_ = c.AbortWithError(http.StatusNotFound, err)
 		return
 	}
-	loginJson, err := json.Marshal(&login)
+	pwdHash := hashPwd(login.Username, login.Password, PwdSalt)
+	sessionId := createSession(login.Username, login.Password, PwdSalt)
+	login.Password = pwdHash
+	reqLogin.Login = login
+	reqLogin.Session.Token = sessionId
+	loginJson, err := json.Marshal(&reqLogin)
 	if err != nil {
 		_ = c.AbortWithError(http.StatusNotFound, err)
 		return
@@ -154,7 +225,6 @@ func loginPost(c *gin.Context) {
 		return
 	}
 	defer resp.Body.Close()
-
 	var respLogin RespLogin
 	err = json.NewDecoder(resp.Body).Decode(&respLogin)
 	if err != nil {
@@ -165,15 +235,34 @@ func loginPost(c *gin.Context) {
 		_ = c.AbortWithError(http.StatusNotFound, fmt.Errorf("%s", respLogin.Resp.Message))
 		return
 	}
+	session := sessions.Default(c)
+	session.Set("username", respLogin.Username)
+	session.Set("name", respLogin.Name)
+	session.Set("sessionId", respLogin.Session.Token)
+	_ = session.Save()
+	c.Redirect(http.StatusMovedPermanently, "/")
 }
 
 func articles(c *gin.Context) {
 	var posts Posts
 	data := map[string]interface{}{}
 	posts.Posts = make([]Post, 0)
-	var session Session
-	session.Token = ""
-	sessionJson, err := json.Marshal(&session)
+	var sessionSt Session
+
+	session := sessions.Default(c)
+	user := ""
+	token := ""
+	val := session.Get("username")
+	if val != nil {
+		user = val.(string)
+	}
+	val = session.Get("sessionId")
+	if val != nil {
+		token = val.(string)
+	}
+
+	sessionSt.Token = token
+	sessionJson, err := json.Marshal(&sessionSt)
 	if err != nil {
 		_ = c.AbortWithError(http.StatusNotFound, err)
 		return
@@ -205,7 +294,7 @@ func articles(c *gin.Context) {
 
 	data["msgs"] = msgs
 	data["posts"] = posts
-	data["user"] = "yoga"
+	data["user"] = user
 	c.HTML(http.StatusOK, "articles.html", data)
 }
 
@@ -218,9 +307,22 @@ func articlesId(c *gin.Context) {
 		_ = c.AbortWithError(http.StatusNotFound, err)
 		return
 	}
-	var session Session
-	session.Token = ""
-	sessionJson, err := json.Marshal(&session)
+
+	user := ""
+	token := ""
+	session := sessions.Default(c)
+	val := session.Get("username")
+	if val != nil {
+		user = val.(string)
+	}
+	val = session.Get("sessionId")
+	if val != nil {
+		token = val.(string)
+	}
+
+	var sessionSt Session
+	sessionSt.Token = token
+	sessionJson, err := json.Marshal(&sessionSt)
 	if err != nil {
 		_ = c.AbortWithError(http.StatusNotFound, err)
 		return
@@ -237,14 +339,20 @@ func articlesId(c *gin.Context) {
 		return
 	}
 	data["post"] = post
-	data["user"] = "yoga"
+	data["user"] = user
 	data["action"] = "/articles/id/" + postId.Id
 	c.HTML(http.StatusOK, "articlesId.html", data)
 }
 
 func articlesAdd(c *gin.Context) {
 	data := map[string]interface{}{}
-	data["user"] = "yoga"
+	session := sessions.Default(c)
+	user := ""
+	val := session.Get("username")
+	if val != nil {
+		user = val.(string)
+	}
+	data["user"] = user
 	data["action"] = "/articles/add"
 	c.HTML(http.StatusOK, "articlesId.html", data)
 }
@@ -256,6 +364,19 @@ func articlesIdPost(c *gin.Context) {
 		_ = c.AbortWithError(http.StatusNotFound, err)
 		return
 	}
+
+	token := ""
+	user := ""
+	session := sessions.Default(c)
+	val := session.Get("sessionId")
+	if val != nil {
+		token = val.(string)
+	}
+	val = session.Get("username")
+	if val != nil {
+		user = val.(string)
+	}
+
 	var post Post
 	err = c.ShouldBind(&post)
 	if err != nil {
@@ -265,9 +386,10 @@ func articlesIdPost(c *gin.Context) {
 	post.Id, _ = strconv.Atoi(postId.Id)
 	post.TimePublished = time.Now().Format("1 January 2006")
 	post.IsPublished = 1
+	post.Author = user
 
 	var submitPost SubmitPost
-	submitPost.Session.Token = ""
+	submitPost.Session.Token = token
 	submitPost.Post = post
 	submitPostJson, err := json.Marshal(&submitPost)
 	if err != nil {
@@ -303,8 +425,21 @@ func articlesAddPost(c *gin.Context) {
 	post.TimePublished = time.Now().Format("1 January 2006")
 	post.IsPublished = 1
 
+	token := ""
+	user := ""
+	session := sessions.Default(c)
+	val := session.Get("sessionId")
+	if val != nil {
+		token = val.(string)
+	}
+	val = session.Get("username")
+	if val != nil {
+		user = val.(string)
+	}
+	post.Author = user
+
 	var submitPost SubmitPost
-	submitPost.Session.Token = ""
+	submitPost.Session.Token = token
 	submitPost.Post = post
 	submitPostJson, err := json.Marshal(&submitPost)
 	if err != nil {
@@ -337,9 +472,17 @@ func articlesIdPublish(c *gin.Context) {
 		_ = c.AbortWithError(http.StatusNotFound, err)
 		return
 	}
-	var session Session
-	session.Token = ""
-	sessionJson, err := json.Marshal(&session)
+
+	token := ""
+	session := sessions.Default(c)
+	val := session.Get("sessionId")
+	if val != nil {
+		token = val.(string)
+	}
+
+	var sessionSt Session
+	sessionSt.Token = token
+	sessionJson, err := json.Marshal(&sessionSt)
 	if err != nil {
 		_ = c.AbortWithError(http.StatusNotFound, err)
 		return
@@ -370,9 +513,17 @@ func articlesIdUnpublish(c *gin.Context) {
 		_ = c.AbortWithError(http.StatusNotFound, err)
 		return
 	}
-	var session Session
-	session.Token = ""
-	sessionJson, err := json.Marshal(&session)
+
+	token := ""
+	session := sessions.Default(c)
+	val := session.Get("sessionId")
+	if val != nil {
+		token = val.(string)
+	}
+
+	var sessionSt Session
+	sessionSt.Token = token
+	sessionJson, err := json.Marshal(&sessionSt)
 	if err != nil {
 		_ = c.AbortWithError(http.StatusNotFound, err)
 		return
@@ -403,9 +554,18 @@ func articlesIdDelete(c *gin.Context) {
 		_ = c.AbortWithError(http.StatusNotFound, err)
 		return
 	}
-	var session Session
-	session.Token = ""
-	sessionJson, err := json.Marshal(&session)
+
+	token := ""
+	session := sessions.Default(c)
+	val := session.Get("sessionId")
+	if val != nil {
+		token = val.(string)
+	}
+
+	var sessionSt Session
+	sessionSt.Token = token
+	sessionJson, err := json.Marshal(&sessionSt)
+
 	if err != nil {
 		_ = c.AbortWithError(http.StatusNotFound, err)
 		return
@@ -430,13 +590,25 @@ func articlesIdDelete(c *gin.Context) {
 }
 
 func logout(c *gin.Context) {
+	session := sessions.Default(c)
+	session.Set("username", "")
+	session.Set("name", "")
+	session.Set("sessionId", "")
+	_ = session.Save()
 	c.Redirect(http.StatusMovedPermanently, "/login")
 }
 
 func main() {
 	//gin.SetMode(gin.ReleaseMode)
+
+	key := securecookie.GenerateRandomKey(32)
+	keyUsed := hex.EncodeToString(key)
+	log.Println("Key used:", keyUsed)
+
 	router := gin.Default()
 	router.LoadHTMLGlob("templates/*")
+	store := cookie.NewStore(key)
+	router.Use(sessions.Sessions(SessionName, store))
 	router.GET("/", home)
 	router.GET("/about", about)
 	router.GET("/contact", contactUs)
