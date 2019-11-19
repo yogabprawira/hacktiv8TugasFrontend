@@ -236,7 +236,6 @@ func articlesId(c *gin.Context) {
 		_ = c.AbortWithError(http.StatusNotFound, err)
 		return
 	}
-	log.Println(post)
 	data["post"] = post
 	data["user"] = "yoga"
 	data["action"] = "/articles/id/" + postId.Id
@@ -331,6 +330,105 @@ func articlesAddPost(c *gin.Context) {
 	c.Redirect(http.StatusMovedPermanently, "/articles")
 }
 
+func articlesIdPublish(c *gin.Context) {
+	var postId PostId
+	err := c.ShouldBindUri(&postId)
+	if err != nil {
+		_ = c.AbortWithError(http.StatusNotFound, err)
+		return
+	}
+	var session Session
+	session.Token = ""
+	sessionJson, err := json.Marshal(&session)
+	if err != nil {
+		_ = c.AbortWithError(http.StatusNotFound, err)
+		return
+	}
+	resp, err := http.Post(BackendUrl+"/articles/id/"+postId.Id+"/publish", "application/json", bytes.NewBuffer(sessionJson))
+	if err != nil {
+		_ = c.AbortWithError(http.StatusNotFound, err)
+		return
+	}
+	defer resp.Body.Close()
+	var respStatus RespStatus
+	err = json.NewDecoder(resp.Body).Decode(&respStatus)
+	if err != nil {
+		_ = c.AbortWithError(http.StatusNotFound, err)
+		return
+	}
+	if respStatus.Status != http.StatusOK {
+		_ = c.AbortWithError(http.StatusNotFound, fmt.Errorf(respStatus.Message))
+		return
+	}
+	c.Redirect(http.StatusMovedPermanently, "/articles")
+}
+
+func articlesIdUnpublish(c *gin.Context) {
+	var postId PostId
+	err := c.ShouldBindUri(&postId)
+	if err != nil {
+		_ = c.AbortWithError(http.StatusNotFound, err)
+		return
+	}
+	var session Session
+	session.Token = ""
+	sessionJson, err := json.Marshal(&session)
+	if err != nil {
+		_ = c.AbortWithError(http.StatusNotFound, err)
+		return
+	}
+	resp, err := http.Post(BackendUrl+"/articles/id/"+postId.Id+"/unpublish", "application/json", bytes.NewBuffer(sessionJson))
+	if err != nil {
+		_ = c.AbortWithError(http.StatusNotFound, err)
+		return
+	}
+	defer resp.Body.Close()
+	var respStatus RespStatus
+	err = json.NewDecoder(resp.Body).Decode(&respStatus)
+	if err != nil {
+		_ = c.AbortWithError(http.StatusNotFound, err)
+		return
+	}
+	if respStatus.Status != http.StatusOK {
+		_ = c.AbortWithError(http.StatusNotFound, fmt.Errorf(respStatus.Message))
+		return
+	}
+	c.Redirect(http.StatusMovedPermanently, "/articles")
+}
+
+func articlesIdDelete(c *gin.Context) {
+	var postId PostId
+	err := c.ShouldBindUri(&postId)
+	if err != nil {
+		_ = c.AbortWithError(http.StatusNotFound, err)
+		return
+	}
+	var session Session
+	session.Token = ""
+	sessionJson, err := json.Marshal(&session)
+	if err != nil {
+		_ = c.AbortWithError(http.StatusNotFound, err)
+		return
+	}
+	resp, err := http.Post(BackendUrl+"/articles/id/"+postId.Id+"/delete", "application/json", bytes.NewBuffer(sessionJson))
+	if err != nil {
+		_ = c.AbortWithError(http.StatusNotFound, err)
+		return
+	}
+	defer resp.Body.Close()
+	var respStatus RespStatus
+	err = json.NewDecoder(resp.Body).Decode(&respStatus)
+	if err != nil {
+		_ = c.AbortWithError(http.StatusNotFound, err)
+		return
+	}
+	if respStatus.Status != http.StatusOK {
+		_ = c.AbortWithError(http.StatusNotFound, fmt.Errorf(respStatus.Message))
+		return
+	}
+	c.Redirect(http.StatusMovedPermanently, "/articles")
+}
+
 func logout(c *gin.Context) {
 	c.Redirect(http.StatusMovedPermanently, "/login")
 }
@@ -351,6 +449,9 @@ func main() {
 	router.GET("/articles/add", articlesAdd)
 	router.POST("/articles/add", articlesAddPost)
 	router.GET("/logout", logout)
+	router.GET("/articles/id/:id/publish", articlesIdPublish)
+	router.GET("/articles/id/:id/unpublish", articlesIdUnpublish)
+	router.GET("/articles/id/:id/delete", articlesIdDelete)
 	err := router.Run(":9090")
 	if err != nil {
 		log.Fatal(err)
