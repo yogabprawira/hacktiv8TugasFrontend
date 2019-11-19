@@ -239,7 +239,7 @@ func articlesId(c *gin.Context) {
 	log.Println(post)
 	data["post"] = post
 	data["user"] = "yoga"
-	data["action"] = "/articles/add/" + postId.Id
+	data["action"] = "/articles/id/" + postId.Id
 	c.HTML(http.StatusOK, "articlesId.html", data)
 }
 
@@ -336,6 +336,7 @@ func logout(c *gin.Context) {
 }
 
 func main() {
+	//gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
 	router.LoadHTMLGlob("templates/*")
 	router.GET("/", home)
